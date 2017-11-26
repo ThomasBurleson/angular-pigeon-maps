@@ -1,0 +1,35 @@
+.centered {
+  text-align:center; 
+  margin-top:50px;
+  width:100%;
+}
+.dragBox {
+  position : relative;
+  width: 400px;
+  height: 400px;
+}
+.mapBox {
+  width: 600px;
+  height: 400px;
+  position: absolute;
+  overflow: hidden;
+  background: #ddd;
+}
+.toolbar {
+  position : absolute;
+  left : 300px;
+  top : 410px;
+  width : 400px;
+}
+w
+.loader {
+  position : absolute;
+  left: 480px;
+  top: 230px;
+}
+
+.status  {
+  font-size: 0.75em;
+  margin-top: -4px;
+  background-color: #ffffff90;
+}
