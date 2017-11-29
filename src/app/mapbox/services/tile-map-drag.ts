@@ -17,8 +17,9 @@ import 'rxjs/add/operator/concat';
 import 'rxjs/add/operator/takeUntil';
 import 'rxjs/add/operator/withLatestFrom';
 import 'rxjs/add/operator/scan';
+import 'rxjs/add/operator/distinctUntilChanged';
 
-import { Point } from '../utils/point';
+import { Point, roundToPrecision } from '../utils/point';
 
 export type PositionCallback = (mEv: MouseEvent) => ((selector: Observable<Point>) => Observable<Point>);
 
@@ -53,33 +54,46 @@ export class TileMapDrag {
   observeDragOn(
       target            : HTMLElement, 
       useMotionSmoothing: boolean          = true,
-      capturePosition   : PositionCallback = null ): Observable<Point> {
+      capturePositionFn : PositionCallback = null ): Observable<Point> {
     
+    const preventDefault = (ev) => ev.preventDefault();
     const mouseDown$ = Observable.fromEvent(target, 'mousedown');
     const mouseMove$ = Observable.fromEvent(this.document, 'mousemove');
 
     const mouseDrag$ = mouseDown$.switchMap((mEv:MouseEvent) => {
-      capturePosition = capturePosition || captureTopLeftStart;
+      capturePositionFn = capturePositionFn || capturePosition;
       
-      // Get current position relative to start topleft
-      // unless overwritter by the PositionCallback argument.
-      const calculateCurrentPosition = capturePosition(mEv);
+      // (1) Get current topLeft parent position (instead of position in parent)
+      // Note this (1) ^ is the default logic unless overwritten by the PositionCallback argument.
 
       return mouseMove$
-      .throttleTime( 2, animationFrame )
-      .do(  preventDefault )
-        .map( viewPortPosition )
-        .let( calculateCurrentPosition )
+        .throttleTime( 30, animationFrame ) // limit mouseMove emits to ~ one (1) animationFrame
+        .do(  preventDefault )
+        .let( capturePositionFn(mEv) )
         .takeUntil( this.mouseUp$ );
     });
 
     /**
-     * Mouse/touch moves linearly interpolated on every animation frame
+     * For each animation frame, use the latest mouseDrag event to 
+     * LERP (linearly interpolated) the movement from the current position
+     * to the 'latest' position. Here we use `.scan()` that accumulates 
+     * each animation frame the interpolated point... 
+     * 
+     * New mouseMove events are LERPed with the recent ACCUMULATED values 
+     * 
+     * Note: If animation frame is 60fps, then each frame ~= 33ms. 
+     *       With LERP_RATE == 0.10, the total interpolated movement 
+     *       requires ~330ms. 
      */ 
     if (useMotionSmoothing) {
+      const roundLERPs = (x) => roundToPrecision(x, 1);
+      const equals = (x:Point, y:Point): boolean  => !!x && !!y && x.matches(y);
+
       return Observable.interval(0, animationFrame)
-          .withLatestFrom(mouseDrag$, (tick, move) => move)
-          .scan(lerp);
+          .withLatestFrom( mouseDrag$, (tick, move) => move )
+          .scan( lerp )
+          .map( roundLERPs )
+          .distinctUntilChanged( equals );
     }
 
     return mouseDrag$;    
@@ -94,10 +108,19 @@ export class TileMapDrag {
 // ****************************************************************
 
 /**
- * Kill all default mouse event responses
+ * Higher-Order (aka Meta) funtion to create a Lettable operation that
+ * converts current mouse position to topLeft position
  */
-function preventDefault(event) {
-  event.preventDefault();
+function capturePosition(mouseDownEvent, useRounding = true) {
+  const startTopLeft = calculateTopLeftOffset(mouseDownEvent);  // immediate capture of point
+  const adjustWithOffset = (currentPosition: Point) => {
+          const pos : Point = currentPosition.offsetBy(startTopLeft);
+          return useRounding ? roundToPrecision(pos, 0) : pos;
+        };
+
+  return (obs):Observable<Point> => obs
+      .map( toViewPortPosition )
+      .map( adjustWithOffset );
 }
 
 /**
@@ -105,13 +128,13 @@ function preventDefault(event) {
  * content area (the viewport) of the browser window. Note: this point does not move even 
  * if the user moves a scrollbar from within the browser.
  */
-function viewPortPosition(mouseEv: MouseEvent): Point {
+function toViewPortPosition(mouseEv: MouseEvent): Point {
   return new Point(mouseEv.clientX, mouseEv.clientY);
 }
 
 /**
  * For the current mouseDown event, calculate the
- * offset from the element's topLeft corner
+ * offset from the element's topLeft corner (relative to its parent)
  */
 function calculateTopLeftOffset(ev):Point {
   const styles    = window.getComputedStyle(ev.currentTarget),
@@ -121,30 +144,22 @@ function calculateTopLeftOffset(ev):Point {
   return new Point(topLeft.x - start.x, topLeft.y - start.y);
 }
 
-/**
- * Partial application to create a Lettable operation that
- * converts current mouse position to topLeft position
- */
-function captureTopLeftStart(mouseDownEvent) {
-  const startTopLeft = calculateTopLeftOffset(mouseDownEvent);
-  const convertPosition = (currentPosition: Point) => {
-          return currentPosition.offsetBy(startTopLeft);
-        };
-  return (obs):Observable<Point> => obs.map(convertPosition);
-}
 
+const LERP_RATE = 0.10;
 /**
  * Linear interpolation function
  */ 
 function lerp(start:Point, end:Point):Point {
-  const rate = 0.10;
   const delta = new Point(end.x - start.x, end.y - start.y);
   
   return new Point(
-    start.x + (delta.x * rate),
-    start.y + (delta.y * rate)
+    start.x + (delta.x * LERP_RATE),
+    start.y + (delta.y * LERP_RATE)
   );
+
 };
+
+
 
 
 

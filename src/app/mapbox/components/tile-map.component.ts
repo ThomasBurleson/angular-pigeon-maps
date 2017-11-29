@@ -110,15 +110,15 @@ export class TileMapComponent {
 
 
   /**
-   * 
+   * Enable map dragging using the TileMapDrag service
    */
   private enableDrag() {
     const container = this.elRef.nativeElement;
     const dragging$ = this.dragger.observeDragOn(container);
 
     this.dragWatch = dragging$.subscribe(position =>{
-      container.style.left = `${Math.round(position.x)}px`;
-      container.style.top  = `${Math.round(position.y)}px`;
+      container.style.left = `${position.x}px`;
+      container.style.top  = `${position.y}px`;
     });
   }
 

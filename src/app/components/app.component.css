@@ -21,11 +21,11 @@
   top : 410px;
   width : 400px;
 }
-w
+
 .loader {
   position : absolute;
-  left: 480px;
-  top: 230px;
+  left: 240px;
+  top: 80px;
 }
 
 .status  {

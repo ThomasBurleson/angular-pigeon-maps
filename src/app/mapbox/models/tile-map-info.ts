@@ -82,4 +82,10 @@ export class TileMapCoordinates {
 
       return new LatLong(delta.x, delta.y);
     }
+
+    // limitCenterAtZoom(center:LatLongPoint = null):LatLongPoint {
+    //   return new LatLong(
+    //     Math.max(Math.min(center ? center.lat : this.latLong.lat, this.max.x), minLat), 
+    //   )
+    // }
 }

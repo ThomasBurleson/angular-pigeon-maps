@@ -58,3 +58,15 @@ export class BoundingRect {
 }
 
 export type Range = { min: Point, max: Point };  
+
+/**
+* Round the `target` Point to the specified precision
+*/
+export function roundToPrecision(target:Point,precision:number=0): Point {
+ const factor = Math.pow(10,precision);
+
+ return new Point(
+     Math.max(Math.floor(target.x * factor)/factor,0),
+     Math.max(Math.floor(target.y * factor)/factor,0)
+ );
+}

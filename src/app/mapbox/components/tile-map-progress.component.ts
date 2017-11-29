@@ -9,6 +9,8 @@ import 'rxjs/add/observable/of';
 
 import { TileMapLoader } from "../services";
 
+const PULSES = [1,2,3,4,5];
+
 @Component({
   selector : 'mb-progress-indicator',
   styleUrls: [
@@ -16,17 +18,14 @@ import { TileMapLoader } from "../services";
   ],
   template : `
     <div class="pulse_box" *ngIf="loading$ | async as loading">
-      <div class="pulse pulse_1"></div>
-      <div class="pulse pulse_2"></div>
-      <div class="pulse pulse_3"></div>
-      <div class="pulse pulse_4"></div>
-      <div class="pulse pulse_5"></div>
+      <div *ngFor="let i of pulses" class="pulse pulse_{{i}}"></div>
       <ng-content></ng-content>
     </div>
   `,
   changeDetection : ChangeDetectionStrategy.OnPush
 })
 export class TileMapProgressIndicator { 
+  pulses = PULSES;
   loading$ : Observable<boolean> = this.loader.loading$;
   
   constructor(private loader: TileMapLoader){ }
