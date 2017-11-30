@@ -21,7 +21,8 @@ import 'rxjs/add/operator/distinctUntilChanged';
 
 import { Point, roundToPrecision } from '../utils/point';
 
-export type PositionCallback = (mEv: MouseEvent) => ((selector: Observable<Point>) => Observable<Point>);
+export type ObservableOperator<T> = ((selector: Observable<T>) => Observable<Point>)
+export type PositionCallback<T> = (mEv: T) => ObservableOperator<T>;
 
 @Injectable()
 export class TileMapDrag {
@@ -54,7 +55,7 @@ export class TileMapDrag {
   observeDragOn(
       target            : HTMLElement, 
       useMotionSmoothing: boolean          = true,
-      capturePositionFn : PositionCallback = null ): Observable<Point> {
+      capturePositionFn : PositionCallback<MouseEvent> = null ): Observable<Point> {
     
     const preventDefault = (ev) => ev.preventDefault();
     const mouseDown$ = Observable.fromEvent(target, 'mousedown');
@@ -111,14 +112,14 @@ export class TileMapDrag {
  * Higher-Order (aka Meta) funtion to create a Lettable operation that
  * converts current mouse position to topLeft position
  */
-function capturePosition(mouseDownEvent, useRounding = true) {
+function capturePosition<T>(mouseDownEvent, useRounding = true) {
   const startTopLeft = calculateTopLeftOffset(mouseDownEvent);  // immediate capture of point
   const adjustWithOffset = (currentPosition: Point) => {
           const pos : Point = currentPosition.offsetBy(startTopLeft);
           return useRounding ? roundToPrecision(pos, 0) : pos;
         };
 
-  return (obs):Observable<Point> => obs
+  return (obs:Observable<MouseEvent>):Observable<Point> => obs
       .map( toViewPortPosition )
       .map( adjustWithOffset );
 }
