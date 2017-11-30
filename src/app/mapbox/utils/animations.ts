@@ -1,9 +1,12 @@
 /**
  * RxJS Tween functionality based on talks by @BenLesh
  * 
+ * @example(1)
  *  // Rotate handle like clock. 
  *  // Each tick movement is motion-animated with tween over 900ms.
  *  
+ *  const clockHand = document.querySelector('.clockHand');
+ * 
  *  Observable.timer(0, 1000)
  *    .map(t => t * 360 / 60 )          // convert to rotation degrees (with 60 increments)
  *    .let( tween(900, elasticOut) )    // in 900ms, tween the change in rotation [from one position to the next]
@@ -11,6 +14,22 @@
  *      clockHand.style.transform = `rotate(${val}deg)` 
  *    });
  *
+ * @example(2)
+ *  // Drop 1..n balls 300px vertically (duration == 900ms) 
+ *  // with a stagger of 500ms between each
+ * 
+ *  const balls = document.querySelectorAll('.ball');
+ *  const moveBall = (ball) => (source$) => source$.do(val => {
+ *          ball.style.transform = `translate3d(0, ${val}px, 0)`;
+ *        });
+ * 
+ *  Observable.from(balls)
+ *    .concatMap((ball, i) => Observable.of(300)
+ *        .delay( i * 500 )
+ *        .let( tween(900, elasticOut) )
+ *        .let( moveBall(ball) )
+ *     )
+ *    .subscribe(_ => console.log('All ball animations done!') );
  *
  * @see https://www.youtube.com/watch?v=X_RnO7KSR-4
  */
@@ -30,6 +49,27 @@ import 'rxjs/add/operator/concat';
 import 'rxjs/add/operator/takeWhile';
 import 'rxjs/add/operator/startWith';
 
+
+/**
+ * tween() is a higher-order function to specify a duration and easing
+ * for any animation observable.
+ * 
+ * @param ms tween duration value
+ * @param easing penner easing function
+ */
+export const tween = (duration:number, easing) => (timer$):Observable<number> =>
+timer$
+  .let( prevAndCurrent(0) )
+  .switchMap( ([initTime, nextTime]) => {
+    return timerFor(duration)
+      .map( easing )
+      .map( tweenValue(nextTime - initTime) )
+      .map( partial => initTime + partial )
+  });
+
+// *****************************************************************************
+// Private functions
+// *****************************************************************************
 
 /**
  * Create a timer whose interval is based on the scheduler
@@ -65,9 +105,9 @@ const tweenValue = (v) => (t) => t * v;
 
 /**
  * ElasticOut Easing function
- * @param t 
+ * @param t number value between 0->1
  */
-export const elasticOut = (t) => {
+const elasticOut = (t) => {
   return Math.sin(-13.0 * (t + 1.0) * Math.PI/2) * Math.pow(2.0, -10.0 * t) + 1.0;
 };
 
@@ -75,25 +115,8 @@ export const elasticOut = (t) => {
  * Grouping operator to gather start-end time
  * @param initiaPos 
  */
-export const prevAndCurrent = (initiaTime) => (time$) => 
+const prevAndCurrent = (initiaTime) => (time$) => 
   time$
     .startWith(initiaTime)
     .bufferCount(2, 1);
-
-/**
- * tween() is a higher-order function to specify a duration and easing
- * for any animation observable.
- * 
- * @param ms tween duration value
- * @param easing penner easing function
- */
-export const tween = (duration:number, easing) => (timer$):Observable<number> =>
-  timer$
-    .let( prevAndCurrent(0) )
-    .switchMap( ([initTime, nextTime]) => {
-      return timerFor(duration)
-        .map( easing )
-        .map( tweenValue(nextTime - initTime) )
-        .map( partial => initTime + partial )
-    });
 
