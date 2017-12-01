@@ -5,6 +5,7 @@ Two branches will be provided:
 
 *  `angular`:  Angular Pigeon Maps (with mono-repository)
    * Based on an ES5 implementation [React v16 project](https://github.com/mariusandra/pigeon-maps), this Angular (5.x) implementation uses a mono-repository to publish both the application and library portions of Pigeon Maps. This branch demonstrates the benefits of using Angular with Typescript, DI, and RxJS. 
+   * More on [Nx Workspaces](https://github.com/ThomasBurleson/angular-pigeon-maps#using-nx-workspaces)...
 
 *  `react`: React Pigeon Maps (with Typescript)
    * Using many of models and services from the Angular.5 version, this Reacet (16) implementation shows the similarity between the two (2) JavaScript technologies.
@@ -24,6 +25,8 @@ Using MapBox API, the `mapbox` library will asynchronously load and build a Tile
   *  zooming, and 
   *  mouse drag navigation
   *  touch support
+
+
 
 ---
 
@@ -166,13 +169,35 @@ TileMapLoader::load( tiles:Array<Tile> ): Observable<Array<Tile>> {
 }
 ```
 
+---
 
-
-
-
+<br/>
 
 ## Development 
 
 Run `ng serve` to build the applicaiton and auto-start a dev web server. Then navigate to `http://localhost:4200/`. 
 
 > The app will automatically reload if you change any of the source files.
+
+
+## Using Nx Workspaces
+
+The advantages of using a mono-repository to promote code sharing and code reuse.
+
+*  Unified Versioning
+*  Promotes code sharing and reuse
+*  Easier dependency management
+*  Refactoring benefits
+*  Consistent development experience
+
+
+![screen shot 2017-12-01 at 8 31 50 am](https://user-images.githubusercontent.com/210413/33487247-260fb2a4-d672-11e7-8619-fb68b60058d3.png)
+
+Nx workspaces tools are built as plugin to Angular CLI. Here are some important resources:
+
+*  [Getting Started with Nx](https://nrwl.io/nx/guide-getting-started)
+*  [How Nx Helps to Encourage Teams to Modularize Code](https://blog.nrwl.io/how-nx-helps-to-encourage-teams-to-modularize-code-d6d3899e8343)
+*  [Nx — An Toolkit for Enterprise Web Apps](https://blog.nrwl.io/nrwl-nx-an-open-source-toolkit-for-enterprise-angular-applications-38698e94d65)
+*  [Nx - A new way to build Enterprise Web Apps (video)](https://www.youtube.com/watch?v=xo-1SDmvM8Y&feature=youtu.be&t=374)
+
+Nx also includes productivity tooling for ngrx usages and scaffolding...
