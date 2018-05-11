@@ -6,6 +6,6 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-export * from './tile-map.component';
-export * from './tile-marker.component';
-export * from './tile-map-progress.component';
+export * from "./tile-map.component";
+export * from "./tile-marker.component";
+export * from "./tile-map-progress.component";

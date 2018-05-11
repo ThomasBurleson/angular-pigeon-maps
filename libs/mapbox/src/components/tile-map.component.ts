@@ -6,33 +6,47 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import { 
-  Inject, 
-  Component, 
-  Input, Output, 
-  EventEmitter, 
+import {
+  Inject,
+  Component,
+  Input,
+  Output,
+  EventEmitter,
   TrackByFunction,
   ChangeDetectionStrategy,
   ContentChildren,
   QueryList,
   SimpleChanges,
   ChangeDetectorRef,
-  ElementRef
+  ElementRef,
+  OnInit,
+  OnDestroy,
+  OnChanges,
+  AfterContentInit
 } from "@angular/core";
 
-import { Observable } from "rxjs/Observable";
 import { Subscription } from "rxjs/Subscription";
 
 import { Tile, TileMap, TileMapCoordinates } from "../models";
-import { Point, LatLongPoint, LatLong, MapStyles, TileMapStyles } from "../utils";
-import { TileMapDrag, TileMapLoader, MapProviderFactory, TILE_MAP_PROVIDERS } from "../services";
+import {
+  Point,
+  LatLongPoint,
+  LatLong,
+  MapStyles,
+  TileMapStyles
+} from "../utils";
+import {
+  TileMapDrag,
+  TileMapLoader,
+  MapProviderFactory,
+  TILE_MAP_PROVIDERS
+} from "../services";
 
 import { TileMarkerComponent } from "./tile-marker.component";
 
-
 @Component({
-  selector : 'mb-tile-map',
-  styles : [
+  selector: "mb-tile-map",
+  styles: [
     `.tile {
         position        : absolute;
         will-change     : transform;
@@ -48,7 +62,7 @@ import { TileMarkerComponent } from "./tile-marker.component";
       }
     }`
   ],
-  template : `
+  template: `
     <div [ngStyle]="styles.box">
       <div [ngStyle]="styles.list">
           <img *ngFor="let tile of tiles; trackBy: getTileID"  
@@ -61,26 +75,26 @@ import { TileMarkerComponent } from "./tile-marker.component";
       </div>
     </div>
   `,
-  changeDetection : ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class TileMapComponent {  
-  
-  map       : TileMap
-  tiles     : Array<Tile>           = [];
-  styles    : MapStyles             = { box: {}, list: {} };
-  getTileID : TrackByFunction<Tile> = Tile.trackBy;
+export class TileMapComponent
+  implements OnInit, OnDestroy, OnChanges, AfterContentInit {
+  map: TileMap;
+  tiles: Array<Tile> = [];
+  styles: MapStyles = { box: {}, list: {} };
+  getTileID: TrackByFunction<Tile> = Tile.trackBy;
 
-  @Input()  zoom     : number;                // zoom level
-  @Input()  center   : Array<number>;         // global lat long position for map center
-  @Input()  provider : string = 'outdoors';   // map provider fn used to build tile urls
+  @Input() zoom: number; // zoom level
+  @Input() center: Array<number>; // global lat long position for map center
+  @Input() provider = "outdoors"; // map provider fn used to build tile urls
 
-  @Output() status   : EventEmitter<string> = new EventEmitter<string>(); 
+  @Output() status: EventEmitter<string> = new EventEmitter<string>();
 
   /**
    * Projected `<tile-marker>` items
    */
-  @ContentChildren(TileMarkerComponent) markers : QueryList<TileMarkerComponent>;
-  
+  @ContentChildren(TileMarkerComponent) markers: QueryList<TileMarkerComponent>;
+
   // **************************************************
   // Constructor
   // **************************************************
@@ -90,32 +104,46 @@ export class TileMapComponent {
    */
   constructor(
     private elRef: ElementRef,
-    private cd : ChangeDetectorRef,
-    private dragger : TileMapDrag,
-    private tileMapLoader : TileMapLoader,
-    @Inject(TILE_MAP_PROVIDERS) private urlsFor:MapProviderFactory ){ }
+    private cd: ChangeDetectorRef,
+    private dragger: TileMapDrag,
+    private tileMapLoader: TileMapLoader,
+    @Inject(TILE_MAP_PROVIDERS) private urlsFor: MapProviderFactory
+  ) {}
+
+  /**
+   * Tools to preload tile images...
+   */
+  private loadWatch: Subscription;
+
+  /**
+   * Watcher for map dragging...
+   */
+  private dragWatch: Subscription;
 
   // **************************************************
   // Lifecycle Events
   // **************************************************
 
-  ngOnInit() {  
+  ngOnInit() {
     this.enableDrag();
-    this.buildTiles();    
+    this.buildTiles();
   }
 
-  ngOnChanges(changes:SimpleChanges) {  this.buildTiles();  }
-  ngAfterContentInit()               {  this.updateMarkerPositions();  }
-  
+  ngOnChanges(changes: SimpleChanges) {
+    this.buildTiles();
+  }
+  ngAfterContentInit() {
+    this.updateMarkerPositions();
+  }
+
   ngOnDestroy() {
     this.loadWatch.unsubscribe();
     this.dragWatch.unsubscribe();
   }
-  
-  // **************************************************
-  // Private methods 
-  // **************************************************
 
+  // **************************************************
+  // Private methods
+  // **************************************************
 
   /**
    * Enable map dragging using the TileMapDrag service
@@ -124,9 +152,9 @@ export class TileMapComponent {
     const container = this.elRef.nativeElement;
     const dragging$ = this.dragger.observeDragOn(container);
 
-    this.dragWatch = dragging$.subscribe(position =>{
+    this.dragWatch = dragging$.subscribe(position => {
       container.style.left = `${position.x}px`;
-      container.style.top  = `${position.y}px`;
+      container.style.top = `${position.y}px`;
     });
   }
 
@@ -134,34 +162,34 @@ export class TileMapComponent {
    * Build a new TileMap for the current center+zoom, then build:
    *  1) a data model for all tiles releative within the TileMap coordinates
    *  2) css styles for the current TileMap
-   * 
+   *
    */
-  private buildTiles() { 
+  private buildTiles() {
     const urlBuilder = this.urlsFor(this.provider);
-    const centerAt   = new LatLong(this.center[0], this.center[1]);
-    const map        = new TileMap( urlBuilder );    
-    const tiles      = map.moveCamera(centerAt, this.zoom);    
+    const centerAt = new LatLong(this.center[0], this.center[1]);
+    const map = new TileMap(urlBuilder);
+    const tiles = map.moveCamera(centerAt, this.zoom);
 
-    this.map         = map;
+    this.map = map;
     this.loadTiles(tiles);
   }
 
   /**
    * Preload all tile images asynchronously
    */
-  private loadTiles(tiles):void {
-    if (this.loadWatch) this.loadWatch.unsubscribe();
-    
-    this.loadWatch = this.tileMapLoader
-        .load(tiles)
-        .subscribe(tiles => {
-          // update template binding sources
-          this.tiles    = tiles;
-          this.styles   = new TileMapStyles(this.map).styles;
+  private loadTiles(tiles): void {
+    if (this.loadWatch) {
+      this.loadWatch.unsubscribe();
+    }
 
-          // Refresh DOM with new tile list
-          this.cd.markForCheck();
-        });
+    this.loadWatch = this.tileMapLoader.load(tiles).subscribe(list => {
+      // update template binding sources
+      this.tiles = list;
+      this.styles = new TileMapStyles(this.map).styles;
+
+      // Refresh DOM with new tile list
+      this.cd.markForCheck();
+    });
   }
 
   /**
@@ -170,24 +198,12 @@ export class TileMapComponent {
    *      (which correct for map zooming and centering).
    */
   private updateMarkerPositions() {
-    const coordinates : TileMapCoordinates = this.map.coordinates;
-    
-    // Convert each TileMarker::anchor global LatLong position to a 
+    const coordinates: TileMapCoordinates = this.map.coordinates;
+
+    // Convert each TileMarker::anchor global LatLong position to a
     // tile map pixel position
-    this.markers.forEach((it:TileMarkerComponent,j:number) => {
+    this.markers.forEach((it: TileMarkerComponent, j: number) => {
       it.topLeft = coordinates.fromLatLong(it.anchor);
-    });         
+    });
   }
-
-  /**
-   * Tools to preload tile images...
-   */
-  private loadWatch    : Subscription;
-
-  /**
-   * Watcher for map dragging...
-   */
-  private dragWatch    : Subscription;
-
-  
 }

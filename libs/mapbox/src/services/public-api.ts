@@ -6,6 +6,6 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-export * from './tile-map-drag';
-export * from './tile-map-loader';
-export * from './tile-map-provider';
+export * from "./tile-map-drag";
+export * from "./tile-map-loader";
+export * from "./tile-map-provider";

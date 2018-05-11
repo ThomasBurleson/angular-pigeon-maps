@@ -1,4 +1,4 @@
-  /**
+/**
  * @license
  * Copyright Mindsapce LLC All Rights Reserved.
  *
@@ -6,10 +6,9 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-
- /**
-   * Are we displaying on Retina
-   */
-  export function isRetina() : boolean {
-    return (typeof window !== 'undefined') && (window.devicePixelRatio >= 2);
-  }
+/**
+ * Are we displaying on Retina
+ */
+export function isRetina(): boolean {
+  return typeof window !== "undefined" && window.devicePixelRatio >= 2;
+}
